@@ -23,8 +23,91 @@
     },
     "accentColor": "#FFFFFF",
     "bots": [],
-    "composeExtensions": [],
-    "configurableTabs": [],
+    "composeExtensions": [
+        {
+            "botId": "0bc21a2c-b9c1-4bd5-9989-0c5aaf324d64",
+            "canUpdateConfiguration": true,
+            "commands": [
+                {
+                    "id": "customAction",
+                    "title": "Perform Custom Action",
+                    "description": "Performs a custom action on a message",
+                    "type": "action",
+                    "fetchTask": true,
+                    "context": ["message"]
+                },
+                {
+                    "id": "create_Issue",
+                    "title": "Create Issue",
+                    "description": "Create a Issue in Jira",
+                    "type": "action",
+                    "fetchTask": true,
+                    "context": ["message"]
+                },
+                {
+                    "id": "update_Issue",
+                    "title": "Update Issue",
+                    "description": "Update a Issue in Jira",
+                    "type": "action",
+                    "fetchTask": true,
+                    "context": ["message"]
+                },
+                {
+                    "id": "get_Issues",
+                    "title": "Get Issues",
+                    "description": "Get All Issues in Jira",
+                    "type": "action",
+                    "fetchTask": true,
+                    "context": ["message"]
+                },
+                
+                {
+                    "id": "searchTask",
+                    "title": "Search Task",
+                    "description": "Search for a task in Jira",
+                    "type": "query",
+                    "parameters": [
+                        {
+                            "name": "taskQuery",
+                            "title": "Enter Task ID",
+                            "description": "Search by task ID or keyword",
+                            "inputType": "text",
+                            "isRequired": true
+                        }
+                    ],
+                    "fetchTask": false
+                },
+                {
+                    "id": "Create-Issue",
+                    "title": "Create Issue",
+                    "description": "Create a new issue in Jira",
+                    "type": "action",
+                    "fetchTask": true
+                },
+                {
+                    "id": "Update-Issue",
+                    "title": "Update Issue",
+                    "description": "Update an existing Jira issue",
+                    "type": "action",
+                    "fetchTask": true
+                },
+                {
+                    "id": "Get-Issues",
+                    "title": "Get Issues",
+                    "description": "Retrieve a list of Jira issues",
+                    "type": "action",
+                    "fetchTask": true
+                }
+            ]
+        }
+    ],
+    "configurableTabs": [
+        {
+            "configurationUrl": "${{TAB_ENDPOINT}}/index.html#/dev-tab",
+            "canUpdateConfiguration": true,
+            "scopes": ["team", "groupChat"]
+        }
+    ],
 
    "staticTabs": [
     {
@@ -54,5 +137,30 @@
     "webApplicationInfo": {
         "id": "${{AAD_APP_CLIENT_ID}}",
         "resource": "api://${{TAB_DOMAIN}}/${{AAD_APP_CLIENT_ID}}"
+    },
+
+    "staticTabs": [
+    {
+        "entityId": "home",
+        "name": "Home",
+        "contentUrl": "${{TAB_ENDPOINT}}/index.html#/home",
+        "websiteUrl": "${{TAB_ENDPOINT}}/index.html#/home",
+        "scopes": ["personal", "groupChat", "team"]
+    },
+    {
+        "entityId": "dashboard",
+        "name": "Dashboard",
+        "contentUrl": "${{TAB_ENDPOINT}}/index.html#/dashboard",
+        "websiteUrl": "${{TAB_ENDPOINT}}/index.html#/dashboard",
+        "scopes": ["personal"]
+    },
+    {
+        "entityId": "settings",
+        "name": "Settings",
+        "contentUrl": "${{TAB_ENDPOINT}}/index.html#/settings",
+        "websiteUrl": "${{TAB_ENDPOINT}}/index.html#/settings",
+        "scopes": ["personal"]
     }
+]
+
 }

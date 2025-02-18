@@ -28,10 +28,18 @@ export default function App() {
   });
 
 
+
+  useEffect(() => {
+    microsoftTeams.app.initialize().then(() => {
+        microsoftTeams.app.enableFullScreen();
+    }).catch(err => console.log("Error enabling fullscreen:", err));
+}, []);
+
   
 
 
   return (
+    <div style={{ backgroundColor: theme === "contrast" ? "#2B2B2B" : "#FFFFFF" }}>
     <TeamsFxContext.Provider value={{ theme, themeString, teamsUserCredential }}>
       <FluentProvider
         theme={
@@ -54,6 +62,9 @@ export default function App() {
               <Navigation /> {/* Static Sidebar */}
               <div className="flex-1 p-6 bg-gray-100" style={{ marginLeft: "250px" }}>
                 <Routes>
+                <Route path="/home" element={<Privacy />} />
+                    <Route path="/dashboard" element={<MessageExtension />} />
+                    <Route path="/settings" element={<MeetingExtension />} />
                   <Route path="/privacy" element={<Privacy />} />
                   <Route path="/termsofuse" element={<TermsOfUse />} />
                   <Route path="/tab" element={<Tab />} />
@@ -68,5 +79,7 @@ export default function App() {
         </Router>
       </FluentProvider>
     </TeamsFxContext.Provider>
+    </div>
+    
   );
 }

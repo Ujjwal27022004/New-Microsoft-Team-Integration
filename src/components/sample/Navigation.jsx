@@ -34,7 +34,7 @@ const Navigation = () => {
             gap: "10px"
         }}>
             <MenuList>
-                <h2>Menu</h2>
+                <p>Menu</p>
                 {links.map(link => (
                     <MenuItem 
                         key={link.key} 
@@ -55,7 +55,7 @@ const Navigation = () => {
                         onMouseEnter={(e) => e.currentTarget.style.background = "#C0C0C0"}
                         onMouseLeave={(e) => e.currentTarget.style.background = "#D3D3D3"}
                     >
-                        <span style={{ fontSize: "15px", alignItems: "center" }}>{link.icon}</span> 
+                        <span style={{ fontSize: "15px", alignItems: "baseline", marginRight:"10" }}>{link.icon}</span> 
                         {link.name}
                     </MenuItem>
                 ))}
