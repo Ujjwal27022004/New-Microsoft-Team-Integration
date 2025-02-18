@@ -17,7 +17,7 @@ import Bot from "./sample/Bot";
 import MeetingExtension from "./sample/MeetingExtension";
 import { TeamsFxContext } from "./Context";
 import config from "./sample/lib/config";
-import Navigation from "./sample/Navigation"; // New Navigation Component
+import Navigation from "./sample/Navigation"; // Sidebar Navigation
 
 import * as microsoftTeams from "@microsoft/teams-js";
 
@@ -27,26 +27,9 @@ export default function App() {
     clientId: config.clientId,
   });
 
-  useEffect(() => {
-    // Initialize the Microsoft Teams SDK
-    microsoftTeams.initialize(() => {
-      // Set the frame context to ensure the app is viewed as a tab
-      microsoftTeams.getContext((context) => {
-        console.log("Teams Context:", context);
 
-        // Notify Teams that the app has successfully initialized
-        microsoftTeams.app.notifySuccess();
+  
 
-        // Only set the frame context once the SDK is initialized
-        if (context) {
-          microsoftTeams.app.setFrameContext({
-            frameContext: "content", // Ensures it's in a tab view
-            hideDefaultAppBar: true, // Hides the default Teams navbar
-          });
-        }
-      });
-    });
-  }, []);
 
   return (
     <TeamsFxContext.Provider value={{ theme, themeString, teamsUserCredential }}>
@@ -67,18 +50,20 @@ export default function App() {
           {loading ? (
             <Spinner style={{ margin: 100 }} />
           ) : (
-            <>
-              <Navigation /> {/* Add navigation */}
-              <Routes>
-                <Route path="/privacy" element={<Privacy />} />
-                <Route path="/termsofuse" element={<TermsOfUse />} />
-                <Route path="/tab" element={<Tab />} />
-                <Route path="/message-extension" element={<MessageExtension />} />
-                <Route path="/bot" element={<Bot />} />
-                <Route path="/meeting-extension" element={<MeetingExtension />} />
-                <Route path="*" element={<Navigate to="/tab" />} />
-              </Routes>
-            </>
+            <div className="flex h-screen">
+              <Navigation /> {/* Static Sidebar */}
+              <div className="flex-1 p-6 bg-gray-100" style={{ marginLeft: "250px" }}>
+                <Routes>
+                  <Route path="/privacy" element={<Privacy />} />
+                  <Route path="/termsofuse" element={<TermsOfUse />} />
+                  <Route path="/tab" element={<Tab />} />
+                  <Route path="/message-extension" element={<MessageExtension />} />
+                  <Route path="/bot" element={<Bot />} />
+                  <Route path="/meeting-extension" element={<MeetingExtension />} />
+                  <Route path="*" element={<Navigate to="/tab" />} />
+                </Routes>
+              </div>
+            </div>
           )}
         </Router>
       </FluentProvider>

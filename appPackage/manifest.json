@@ -14,7 +14,7 @@
         "outline": "outline.png"
     },
     "name": {
-        "short": "Sample${{APP_NAME_SUFFIX}}",
+        "short": "Forge Matrix",
         "full": "Full name for Sample"
     },
     "description": {
@@ -26,19 +26,20 @@
     "composeExtensions": [],
     "configurableTabs": [],
 
-    "staticTabs": [
-        {
-            "entityId": "index",
-            "name": "Home",
-            "contentUrl": "${{TAB_ENDPOINT}}/index.html#/tab",
-            "websiteUrl": "${{TAB_ENDPOINT}}/index.html#/tab",
-            "scopes": [
-                "personal",
-                "groupChat",
-                "team"
-            ]
-        }
-    ],
+   "staticTabs": [
+    {
+        "entityId": "index",
+        "name": "Home",
+        "contentUrl": "${{TAB_ENDPOINT}}/index.html#/tab",
+        "websiteUrl": "${{TAB_ENDPOINT}}/index.html#/tab",
+        "scopes": [
+            "personal",
+            "groupChat",
+            "team"
+        ]
+    }
+],
+
 
     "permissions": [
         "identity",
