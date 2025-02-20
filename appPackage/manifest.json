@@ -10,19 +10,26 @@
         "termsOfUseUrl": "${{TAB_ENDPOINT}}/index.html#/termsofuse"
     },
     "icons": {
-        "color": "color.png",
+        "color": "icon1.png",
         "outline": "outline.png"
     },
     "name": {
-        "short": "Forge Matrix",
-        "full": "Full name for Sample"
+        "short": "Forge Matrix-S",
+        "full": "Forge Matrix-S"
     },
     "description": {
         "short": "Short description of Sample",
         "full": "Full description of Sample"
     },
     "accentColor": "#FFFFFF",
-    "bots": [],
+    "bots": [
+        {
+            "botId": "0bc21a2c-b9c1-4bd5-9989-0c5aaf324d64",
+            "scopes": ["team","groupChat"],
+            "supportsFiles": false,
+            "isNotificationOnly": false
+        }
+    ],
     "composeExtensions": [
         {
             "botId": "0bc21a2c-b9c1-4bd5-9989-0c5aaf324d64",
@@ -154,6 +161,14 @@
         "websiteUrl": "${{TAB_ENDPOINT}}/index.html#/dashboard",
         "scopes": ["personal"]
     },
+    {
+        "entityId": "admin-config-tab",
+        "name": "Admin Config",
+        "contentUrl": "${{TAB_ENDPOINT}}/index.html#/adminconfig",
+        "websiteUrl": "${{TAB_ENDPOINT}}/index.html#/adminconfig",
+        "scopes": ["personal"]
+    },
+    
     {
         "entityId": "settings",
         "name": "Settings",
