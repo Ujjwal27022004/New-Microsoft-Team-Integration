@@ -10,13 +10,16 @@
         "@fluentui/react": "^8.122.9",
         "@fluentui/react-components": "^9.58.3",
         "@fluentui/react-icons": "^2.0.274",
+        "@google/generative-ai": "^0.21.0",
         "@microsoft/teams-js": "^2.34.0",
         "@microsoft/teamsfx": "^3.0.0",
         "@microsoft/teamsfx-react": "^4.0.0",
         "axios": "^0.21.1",
+        "dotenv": "^16.4.7",
         "react": "^18.2.0",
         "react-dom": "^18.2.0",
-        "react-router-dom": "^6.8.0"
+        "react-router-dom": "^6.8.0",
+        "restify": "^11.1.0"
     },
     "devDependencies": {
         "@types/node": "^18.0.0",
