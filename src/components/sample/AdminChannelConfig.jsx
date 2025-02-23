@@ -23,6 +23,8 @@ const AdminChannelConfig = () => {
       }
     };
 
+    
+
     fetchTeams();
   }, []);
 
