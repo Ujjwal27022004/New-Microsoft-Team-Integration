@@ -1,115 +1,132 @@
-import React, { useState, useEffect } from "react";
-import axios from "axios";
-import {
-  Checkbox,
-  PrimaryButton,
-  DefaultButton,
-  Stack,
-  TextField,
-} from "@fluentui/react";
+import React, { useState, useEffect } from 'react';
+import './AdminConfig.css'; // Create this CSS file
 
-export default function AdminConfig() {
-  const [config, setConfig] = useState({
-    issueKey: false,
-    summary: false,
-    status: false,
-    priority: false,
-    description: false,
-  });
-  const [customField, setCustomField] = useState("");
-  const API_URL = "http://localhost:5000/api/admin/config"; // Update with your backend API
 
-  // Fetch latest schema from backend
-  const fetchConfig = async () => {
-    try {
-      const response = await axios.get("http://localhost:5000/api/admin/latest-notification-schema");
-      setConfig(response.data || {}); // Set latest config
-    } catch (error) {
-      console.error("Error fetching config:", error);
-    }
-  };
+const AdminConfig = () => {
+  const [configTree, setConfigTree] = useState({});
+  const [configStates, setConfigStates] = useState({});
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
-  // Save updated schema to backend
-  const saveConfig = async () => {
-    try {
-        // Prepare the request body
-        const updatedConfig = {
-            schemaId: 1,
-            fields: {
-                issueKey: config.issueKey ?? false,
-                summary: config.summary ?? false,
-                status: config.status ?? false,
-                priority: config.priority ?? false,
-                description: config.description ?? false
-            },
-            templateName: "Updated Schema Template",
-            summary: config.summary ? 1 : 0,
-            status: config.status ? 1 : 0,
-            priority: config.priority ? 1 : 0,
-            description: config.description ? 1 : 0,
-            issueUrl: config.issueUrl ? 1 : 0
-        };
-        console.log("Updated Config:", updatedConfig);
-
-        await axios.put("http://localhost:5000/api/admin/update-notification-schema", updatedConfig);
-        alert("Configuration saved successfully!");
-    } catch (error) {
-        console.error("Error saving config:", error);
-        alert("Failed to save configuration.");
-    }
-  };
-
-  // Handle checkbox toggles
-  const handleCheckboxChange = (field, checked) => {
-    setConfig((prev) => ({ ...prev, [field]: checked }));
-  };
-
+  // Fetch configurations from API
   useEffect(() => {
-    fetchConfig(); // Load config on component mount
+    const fetchConfigs = async () => {
+      try {
+        const response = await fetch('http://localhost:5000/api/schema');
+        if (!response.ok) throw new Error('Failed to fetch configurations');
+        
+        const data = await response.json();
+        const validConfigs = data.filter(item => item.fieldName);
+        
+        // Initialize state and build configuration tree
+        const states = {};
+        const tree = { children: {} };
+        
+        validConfigs.forEach(config => {
+          states[config._id] = config.isEnabled;
+          buildConfigTree(tree, config);
+        });
+
+        setConfigStates(states);
+        setConfigTree(tree);
+        setLoading(false);
+      } catch (err) {
+        setError(err.message);
+        setLoading(false);
+      }
+    };
+
+    fetchConfigs();
   }, []);
 
-  return (
-    <Stack
-      tokens={{ childrenGap: 15 }}
-      styles={{
-        root: {
-          width: 400,
-          padding: 20,
-          background: "#f3f2f1",
-          borderRadius: 8,
-          boxShadow: "0 2px 8px rgba(0, 0, 0, 0.1)",
-        },
-      }}
-    >
-      <h2 style={{ fontSize: "18px", fontWeight: "bold" }}>
-        Admin Notification Configuration
-      </h2>
+  // Build hierarchical configuration tree
+  const buildConfigTree = (root, config) => {
+    const parts = config.fieldName.split('.');
+    let currentNode = root;
+    
+    parts.forEach((part, index) => {
+      if (!currentNode.children[part]) {
+        currentNode.children[part] = {
+          name: part,
+          children: {},
+          config: index === parts.length - 1 ? config : null
+        };
+      }
+      currentNode = currentNode.children[part];
+    });
+  };
 
-      {/* Checkboxes for selected fields */}
-      {["issueKey", "summary", "status", "priority", "description"].map(
-        (field) => (
-          <Checkbox
-            key={field}
-            label={field}
-            checked={config[field]}
-            onChange={(e, checked) => handleCheckboxChange(field, checked)}
+  // Handle checkbox toggle
+  const handleToggle = (configId) => {
+    setConfigStates(prev => ({
+      ...prev,
+      [configId]: !prev[configId]
+    }));
+  };
+
+  // Save all configuration changes
+  const handleSave = async () => {
+    const updates = Object.entries(configStates).map(([id, isEnabled]) => ({
+      id,
+      isEnabled
+    }));
+
+    try {
+      const response = await fetch('http://localhost:5000/api/schema/bulk-update', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ updates })
+      });
+
+      if (!response.ok) throw new Error('Update failed');
+      alert('Configurations updated successfully!');
+    } catch (err) {
+      alert(`Error: ${err.message}`);
+    }
+  };
+
+  // Recursive component to render configuration tree
+  const ConfigNode = ({ node, depth = 0 }) => (
+    <div className="config-node" style={{ marginLeft: `${depth * 32}px` }}>
+      {node.config ? (
+        <label className="config-item">
+          <input
+            type="checkbox"
+            checked={configStates[node.config._id]}
+            onChange={() => handleToggle(node.config._id)}
           />
-        )
+          <span>{node.name}</span>
+        </label>
+      ) : (
+        <div className="config-group">{node.name}</div>
       )}
-
-      {/* Input for Custom Field */}
-      <TextField
-        label="Custom Field"
-        placeholder="Enter Custom Field"
-        value={customField}
-        onChange={(e, newValue) => setCustomField(newValue)}
-      />
-
-      {/* Buttons */}
-      <Stack horizontal tokens={{ childrenGap: 10 }}>
-        <PrimaryButton onClick={saveConfig} text="Save Config" />
-        <DefaultButton onClick={fetchConfig} text="Refresh" />
-      </Stack>
-    </Stack>
+      {Object.values(node.children).map(child => (
+        <ConfigNode key={child.name} node={child} depth={depth + 1} />
+      ))}
+    </div>
   );
-}
+
+  if (loading) return <div className="loading">Loading configurations...</div>;
+  if (error) return <div className="error">Error: {error}</div>;
+
+  return (
+    <div className="admin-config">
+      <header className="header">
+        <h1>Admin Notification Configuration</h1>
+        <button className="save-button" onClick={handleSave}>
+          Update Configurations
+        </button>
+      </header>
+
+      <div className="config-tree">
+        {Object.values(configTree.children).map(node => (
+          <ConfigNode key={node.name} node={node} />
+        ))}
+      </div>
+    </div>
+  );
+};
+
+export default AdminConfig;
+
+// Add CSS for styling

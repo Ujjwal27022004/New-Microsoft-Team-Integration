@@ -21,6 +21,7 @@ import Navigation from "./sample/Navigation"; // Sidebar Navigation
 
 import * as microsoftTeams from "@microsoft/teams-js";
 import AdminConfig from "./sample/AdminConfig";
+import AdminPanel from "./sample/AdminPanel";
 
 export default function App() {
   const { loading, theme, themeString, teamsUserCredential } = useTeamsUserCredential({
@@ -72,7 +73,7 @@ export default function App() {
                   <Route path="/message-extension" element={<MessageExtension />} />
                   <Route path="/bot" element={<Bot />} />
                   <Route path="/meeting-extension" element={<MeetingExtension />} />
-                  <Route path="/adminconfig" element={<AdminConfig />} />
+                  <Route path="/adminconfig" element={<AdminPanel />} />
                   <Route path="*" element={<Navigate to="/tab" />} />
                 </Routes>
               </div>

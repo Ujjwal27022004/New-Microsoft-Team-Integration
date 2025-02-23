@@ -1,0 +1,152 @@
+.admin-config {
+    padding: 2rem;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 2px 16px rgba(0, 0, 0, 0.1);
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  }
+  
+  .header {
+    position: relative; /* Remove fixed positioning from header */
+    padding-right: 120px; /* Make space for sticky button */
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+    padding-bottom: 1rem;
+    border-bottom: 2px solid #e0e0e0;
+  }
+  
+  .header h1 {
+    font-size: 1.8rem;
+    color: #333;
+    margin: 0;
+  }
+  
+  .save-button {
+    color: white;
+    border-radius: 7px;
+    background: #4a90e2;
+    position: fixed;
+    right: 20px;
+    bottom: 20px;
+    padding: 0.6rem 1.2rem;
+    font-size: 0.9rem;
+    z-index: 1000;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    transition: all 0.2s ease;
+    /* Remove margin from button */
+  }
+  
+  .save-button:hover {
+    background: #ffffff;
+    transform: scale(1.05);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+    color: black;
+  }
+  
+  .config-tree {
+    padding: 1rem 0;
+  }
+  
+  .config-node {
+    margin: 0.5rem 0;
+    position: relative;
+    padding-left: 24px;
+  }
+  
+  .config-node::before {
+    content: '';
+    position: absolute;
+    left: 8px;
+    top: -18px;
+    bottom: 16px;
+    width: 1px;
+    background: #ddd;
+  }
+  
+  .config-group {
+    color: #2c3e50;
+    font-weight: 700;
+    margin: 1rem 0;
+    padding: 0.8rem 1rem;
+    background: #f8f9fa;
+    border-radius: 6px;
+    border-left: 4px solid #4a90e2;
+    position: relative;
+  }
+  
+  .config-item {
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+    padding: 0.8rem 1rem;
+    border-radius: 6px;
+    transition: background 0.2s ease;
+    position: relative;
+  }
+  
+  .config-item:hover {
+    background: #f8f9fa;
+  }
+  
+  .config-item input[type="checkbox"] {
+    width: 20px;
+    height: 20px;
+    border: 2px solid #ddd;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    appearance: none;
+    position: relative;
+  }
+  
+  .config-item input[type="checkbox"]:checked {
+    background: #4a90e2;
+    border-color: #4a90e2;
+  }
+  
+  .config-item input[type="checkbox"]:checked::after {
+    content: '✓';
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    color: white;
+    font-size: 14px;
+  }
+  
+  .config-item span {
+    color: #34495e;
+    font-size: 1rem;
+  }
+  
+  .loading, .error {
+    text-align: center;
+    padding: 2rem;
+    font-size: 1.2rem;
+    color: #666;
+  }
+  
+  .error {
+    color: #e74c3c;
+  }
+  
+  /* Tree connection lines */
+  .config-node:not(:first-child)::before {
+    top: -18px;
+  }
+  
+  .config-node:last-child::before {
+    height: 34px;
+  }
+  
+  .config-node::after {
+    content: '';
+    position: absolute;
+    left: 8px;
+    top: 18px;
+    height: 1px;
+    width: 16px;
+    background: #ddd;
+  }
