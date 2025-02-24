@@ -18,7 +18,7 @@ import MeetingExtension from "./sample/MeetingExtension";
 import { TeamsFxContext } from "./Context";
 import config from "./sample/lib/config";
 import Navigation from "./sample/Navigation"; // Sidebar Navigation
-
+import GetAllUser from "./sample/GetAllUser";
 import * as microsoftTeams from "@microsoft/teams-js";
 import AdminConfig from "./sample/AdminConfig";
 import AdminPanel from "./sample/AdminPanel";
@@ -67,6 +67,7 @@ export default function App() {
                 <Route path="/home" element={<Privacy />} />
                     <Route path="/dashboard" element={<MessageExtension />} />
                     <Route path="/settings" element={<MeetingExtension />} />
+                    <Route path="/GetAllUser" element={<GetAllUser />} />
                   <Route path="/privacy" element={<Privacy />} />
                   <Route path="/termsofuse" element={<TermsOfUse />} />
                   <Route path="/tab" element={<Tab />} />

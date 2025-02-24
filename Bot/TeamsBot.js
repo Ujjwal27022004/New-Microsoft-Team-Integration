@@ -9,7 +9,7 @@ const JIRA_BASE_URL = "https://ujjwal27022004.atlassian.net/rest/api/3";
 const JIRA_AUTH = {
     auth: {
         username: "ujjwal27022004@gmail.com",
-        password: "ATATT3xFfGF0...YOUR_API_TOKEN"
+        password: "ATATT3xFfGF0pVftmqKAXkKPnrCdWyd9xirEl3gh-pN8jHD3ao-o8mDk4ivLctOvvc-bwmOSixBnbRiEtv4rQyA5Q8bYXkYrTEtplRMKpRXg75SD8omTXcuahgoq-nUPlwCBS2DgQUb3eB2LGgd38dOFjcPsn1AQDGjMZYS5u58xTFNXxYx1_Qg=8F03938D"
     }
 };
 
@@ -24,6 +24,10 @@ const intents = {
     "faq": ["help", "support", "how to"],
     "general": ["hello", "hi", "who are you"]
 };
+
+function stripHtml(html) {
+    return html.replace(/<[^>]*>/g, ''); // Removes all HTML tags
+}
 
 export class TeamsBot extends TeamsActivityHandler {
     constructor() {
@@ -40,6 +44,7 @@ export class TeamsBot extends TeamsActivityHandler {
 
             // Handle text commands
             const userMessage = context.activity.text.toLowerCase();
+            console.log(userMessage)
             const intent = this.detectIntent(userMessage);
 
             let response;
@@ -125,21 +130,21 @@ export class TeamsBot extends TeamsActivityHandler {
         try {
             const issueDescription = formData.description;
             const issueType = formData.priority; // Assuming 'priority' from the form is used as 'issueType'
-    
+
             // Send request to your backend API
             const response = await axios.post("http://localhost:5000/create-jira-issue", {
                 description: issueDescription,
                 issueType: issueType
             });
-    
+
             await context.sendActivity(`✅ ${response.data.message}\nIssue: ${JSON.stringify(response.data.issue, null, 2)}`);
         } catch (error) {
             console.error("❌ Error creating Jira issue:", error.response?.data || error.message);
             await context.sendActivity("❌ Failed to create issue. Please check the server logs.");
         }
     }
-    
-    
+
+
 
     detectIntent(userMessage) {
         for (const [intent, keywords] of Object.entries(intents)) {
@@ -198,4 +203,485 @@ export class TeamsBot extends TeamsActivityHandler {
     async updateAdminConfig(newConfig) {
         adminConfig = newConfig;
     }
+
+
+
+
+
+
+
+
+
+
+
+
+
+    async handleTeamsMessagingExtensionFetchTask(context, action) {
+        const selectedMessage = action.messagePayload.body.content || "";
+
+
+        if (action.commandId === "Add_comment") {
+            const issueKey = ""; // Ensure issue key is passed
+            return {
+                task: {
+                    type: "continue",
+                    value: {
+                        title: "Add Comment",
+                        height: 300,
+                        width: 500,
+                        card: CardFactory.adaptiveCard(this.getCommentCard(issueKey))
+                    }
+                }
+            };
+        }
+        else if (action.commandId === "resolve_issue") {
+            return {
+                task: {
+                    type: "continue",
+                    value: {
+                        title: "Resolve Jira Issue",
+                        height: 400,
+                        width: 500,
+                        card: CardFactory.adaptiveCard(this.getResolveIssueCard())
+                    }
+                }
+            };
+        }
+        return {
+            task: {
+                type: "continue",
+                value: {
+                    title: "Create Jira Issue",
+                    height: 500,
+                    width: 600,
+                    card: CardFactory.adaptiveCard(this.getCreateIssueForm(selectedMessage)),
+                }
+            }
+        };
+    }
+
+    // Handle form submission
+    async handleTeamsMessagingExtensionSubmitAction(context, action) {
+
+        if (action.data.action === "addComment") {
+            return await this.handleAddComment(context, action);
+        } 
+        else  if (action.data.action === "fetchIssueStatuses") {
+            const { issueKey } = action.data;
+    
+            if (!issueKey) {
+                return {
+                    composeExtension: {
+                        type: "message",
+                        text: "⚠️ Please enter an Issue Key first."
+                    }
+                };
+            }
+    
+            const statuses = await this.fetchIssueStatuses(issueKey);
+    
+            if (statuses.length === 0) {
+                return {
+                    composeExtension: {
+                        type: "message",
+                        text: "❌ Failed to fetch statuses. Check the issue key."
+                    }
+                };
+            }
+    
+            return {
+                task: {
+                    type: "continue",
+                    value: {
+                        title: "Update Issue Status",
+                        height: 400,
+                        width: 500,
+                        card: CardFactory.adaptiveCard(this.getUpdateStatusCard(issueKey, statuses))
+                    }
+                }
+            };
+        } else if (action.data.action === "resolveIssue") {
+            return await this.handleResolveIssue(context, action);
+        }
+        
+        else {
+
+            const { description, issueType } = action.data;
+            try {
+                // Call the backend API with only the required fields
+                const response = await fetch("http://localhost:5000/create-jira-issue", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ description, issueType }) // Send only required fields
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! Status: ${response.status}`);
+                }
+
+                const issueData = await response.json();
+                console.log("Received issueData from API:", issueData.issue.key); // Debugging
+
+
+                // Send a confirmation card back to Teams chat
+                return {
+                    composeExtension: {
+                        type: "result",
+                        attachmentLayout: "list",
+                        attachments: [
+                            CardFactory.adaptiveCard(this.getJiraIssueCard(issueData.issue.key, issueType, description))
+                        ]
+                    }
+                };
+            } catch (error) {
+                return {
+                    composeExtension: {
+                        type: "message",
+                        text: `❌ Failed to create Jira Issue: ${error.message}`
+                    }
+                };
+            }
+        }
+    }
+
+
+   
+    
+
+    // Adaptive Card for "Create Issue" Form
+    getCreateIssueForm(preFilledDescription = "") {
+        return {
+            type: "AdaptiveCard",
+            body: [
+
+                {
+                    type: "TextBlock", text: "Create Jira Issue", weight: "Bolder", size: "Medium", color: "Good", wrap: "true"
+                },
+
+                { type: "TextBlock", text: "Project", weight: "Bolder" },
+                {
+                    type: "Input.ChoiceSet",
+                    id: "priority",
+                    choices: [
+                        { title: "Project1", value: "Project1" },
+                        { title: "Project2", value: "Project2" },
+                        { title: "Project3", value: "Project3" }
+                    ],
+                    value: "Project1"
+                },
+
+                { type: "TextBlock", text: "Issue Type", weight: "Bolder" },
+                {
+                    type: "Input.ChoiceSet",
+                    id: "issueType",
+                    choices: [
+                        { title: "Task", value: "Task" },
+                        { title: "Bug", value: "Bug" },
+                        { title: "Story", value: "Story" }
+                    ],
+                    value: "Task"
+                },
+
+                { type: "TextBlock", text: "Title", weight: "Bolder" },
+                { type: "Input.Text", id: "title", placeholder: "Enter issue title" },
+                { type: "TextBlock", text: "Description", weight: "Bolder" },
+                {
+                    type: "Input.Text",
+                    id: "description",
+
+                    value: stripHtml(preFilledDescription),
+                    height: "stretch",
+                    "isMultiline": true,
+
+
+                },
+
+                {
+                    "type": "TextBlock",
+                    "text": "Attachments",
+                    "weight": "Bolder",
+                    "spacing": "medium"
+                  },
+                  {
+                    "type": "ActionSet",
+                    "actions": [
+    
+                        {
+                            "type": "Action.Submit",
+                            "title": "Create",
+                            "style": "positive",
+                            "data": { "action": "createIssue" }
+                        },
+                      {
+                        "type": "Action.OpenUrl",
+                        "title": "📎 Upload from OneDrive",
+                        "url": "https://onedrive.live.com"
+                      }
+                    ]
+                  }
+    
+            ],
+            actions: [{ type: "Action.Submit", title: "Create", style: "positive" }],
+            // actions: [{ type: "Action.Submit", title: "Create",style:"positive" }],
+            version: "1.4"
+
+        }
+    }
+
+
+    // Adaptive Card to Display Created Issue
+    getJiraIssueCard(issueKey, title, description) {
+        return {
+            type: "AdaptiveCard",
+            body: [
+                { type: "TextBlock", color: "Good", text: `✅ Jira Issue Created: ${issueKey}`, weight: "Bolder", size: "Medium" },
+                { type: "TextBlock", text: `**Title:** ${title}` },
+                { type: "TextBlock", text: `**Description:** ${description}` },
+                { type: "TextBlock", text: `[View Issue](https://ujjwal27022004.atlassian.net/browse/${issueKey})`, color: "Accent" }
+            ],
+
+            actions: [
+                {
+                    type: "Action.Submit",
+                    title: "Add Comment",
+                    data: { "action": "openCommentCard", "issueKey": issueKey }
+                }
+            ],
+            version: "1.4"
+        };
+    }
+
+
+    getCommentCard(issueKey) {
+        return {
+            type: "AdaptiveCard",
+            body: [
+                { type: "TextBlock", text: "Issue Key:", weight: "Bolder" },
+                { type: "Input.Text", id: "issueKey", placeholder: "Enter issue key", value: issueKey },
+                { type: "TextBlock", text: "Enter your comment:", weight: "Bolder" },
+                { type: "Input.Text", id: "commentText", placeholder: "Type your comment here..." }
+            ],
+            actions: [
+                {
+                    type: "Action.Submit",
+                    title: "Submit Comment",
+                    data: { action: "addComment" }
+                }
+            ],
+            version: "1.4"
+        };
+    }
+
+
+
+    async handleAddComment(context, action) {
+        const { issueKey, commentText } = action.data;
+
+        // Validate input
+        if (!issueKey || !commentText) {
+            return {
+                composeExtension: {
+                    type: "message",
+                    text: "⚠️ Please enter both an Issue Key and a Comment."
+                }
+            };
+        }
+
+        const jiraUrl = `https://ujjwal27022004.atlassian.net/rest/api/3/issue/${issueKey}/comment`;
+        const auth = Buffer.from(`ujjwal27022004@gmail.com:ATATT3xFfGF0pVftmqKAXkKPnrCdWyd9xirEl3gh-pN8jHD3ao-o8mDk4ivLctOvvc-bwmOSixBnbRiEtv4rQyA5Q8bYXkYrTEtplRMKpRXg75SD8omTXcuahgoq-nUPlwCBS2DgQUb3eB2LGgd38dOFjcPsn1AQDGjMZYS5u58xTFNXxYx1_Qg=8F03938D`).toString("base64");
+
+        try {
+            const jiraResponse = await axios.post(
+                jiraUrl,
+                {
+                    body: {
+                        type: "doc",
+                        version: 1,
+                        content: [
+                            {
+                                type: "paragraph",
+                                content: [{ type: "text", text: commentText }]
+                            }
+                        ]
+                    }
+                },
+                {
+                    headers: {
+                        Authorization: `Basic ${auth}`,
+                        "Accept": "application/json",
+                        "Content-Type": "application/json"
+                    }
+                }
+            );
+
+            console.log("Jira API Response:", jiraResponse.data);
+
+            return {
+                composeExtension: {
+                    type: "result",
+                    attachmentLayout: "list",
+                    attachments: [
+                        {
+                            contentType: "application/vnd.microsoft.card.adaptive",
+                            content: {
+                                type: "AdaptiveCard",
+                                version: "1.4",
+                                body: [
+                                    {
+                                        type: "TextBlock",
+                                        size: "Medium",
+                                        weight: "Bolder",
+                                        text: "✅ Comment Added Successfully"
+                                    },
+                                    {
+                                        type: "TextBlock",
+                                        text: `**Issue:** ${issueKey}`,
+                                        wrap: true
+                                    },
+                                    {
+                                        type: "TextBlock",
+                                        text: `**Comment:** ${commentText}`,
+                                        wrap: true
+                                    }
+                                ],
+                                actions: [
+                                    {
+                                        type: "Action.OpenUrl",
+                                        title: "View Issue",
+                                        url: `https://ujjwal27022004.atlassian.net/browse/${issueKey}`
+                                    }
+                                ]
+                            }
+                        }
+                    ]
+                }
+            }
+        } catch (error) {
+            console.error("Error adding comment:", error.response ? error.response.data : error.message);
+
+            return {
+                composeExtension: {
+                    type: "message",
+                    text: `❌ Failed to add comment: ${error.response ? error.response.data.errorMessages[0] : error.message}`
+                }
+            };
+        }
+    }
+
+
+    getResolveIssueCard() {
+        return {
+            type: "AdaptiveCard",
+            body: [
+                { type: "TextBlock", text: "Resolve Jira Issue", weight: "Bolder", size: "Medium" },
+                { type: "TextBlock", text: "Enter Issue Key:", weight: "Bolder" },
+                { type: "Input.Text", id: "issueKey", placeholder: "Enter issue key" }
+            ],
+            actions: [
+                {
+                    type: "Action.Submit",
+                    title: "Get Status",
+                    data: { action: "fetchIssueStatuses" }
+                }
+            ],
+            version: "1.4"
+        };
+    }
+    
+
+    async fetchIssueStatuses(issueKey) {
+        const jiraUrl = `https://ujjwal27022004.atlassian.net/rest/api/3/issue/${issueKey}/transitions`;
+        const auth = Buffer.from(`ujjwal27022004@gmail.com:ATATT3xFfGF0pVftmqKAXkKPnrCdWyd9xirEl3gh-pN8jHD3ao-o8mDk4ivLctOvvc-bwmOSixBnbRiEtv4rQyA5Q8bYXkYrTEtplRMKpRXg75SD8omTXcuahgoq-nUPlwCBS2DgQUb3eB2LGgd38dOFjcPsn1AQDGjMZYS5u58xTFNXxYx1_Qg=8F03938D`).toString("base64");
+    
+        try {
+            const response = await axios.get(jiraUrl, {
+                headers: {
+                    Authorization: `Basic ${auth}`,
+                    Accept: "application/json"
+                }
+            });
+    
+            const statuses = response.data.transitions.map(transition => ({
+                title: transition.name,
+                value: transition.id
+            }));
+    
+            return statuses;
+        } catch (error) {
+            console.error("Error fetching issue statuses:", error.response ? error.response.data : error.message);
+            return [];
+        }
+    }
+
+    getUpdateStatusCard(issueKey, statuses) {
+        return {
+            type: "AdaptiveCard",
+            body: [
+                { type: "TextBlock", text: "Update Jira Issue Status", weight: "Bolder", size: "Medium" },
+                { type: "TextBlock", text: `Issue Key: ${issueKey}`, weight: "Bolder" },
+                {
+                    type: "Input.ChoiceSet",
+                    id: "selectedStatus",
+                    title: "Select New Status",
+                    choices: statuses
+                }
+            ],
+            actions: [
+                {
+                    type: "Action.Submit",
+                    title: "Update Status",
+                    data: { action: "resolveIssue", issueKey: issueKey }
+                }
+            ],
+            version: "1.4"
+        };
+    }
+
+
+    async handleResolveIssue(context, action) {
+        const { issueKey, selectedStatus } = action.data;
+    
+        if (!issueKey || !selectedStatus) {
+            return {
+                composeExtension: {
+                    type: "message",
+                    text: "⚠️ Please select a status."
+                }
+            };
+        }
+    
+        const jiraUrl = `https://ujjwal27022004.atlassian.net/rest/api/3/issue/${issueKey}/transitions`;
+        const auth = Buffer.from(`ujjwal27022004@gmail.com:ATATT3xFfGF0pVftmqKAXkKPnrCdWyd9xirEl3gh-pN8jHD3ao-o8mDk4ivLctOvvc-bwmOSixBnbRiEtv4rQyA5Q8bYXkYrTEtplRMKpRXg75SD8omTXcuahgoq-nUPlwCBS2DgQUb3eB2LGgd38dOFjcPsn1AQDGjMZYS5u58xTFNXxYx1_Qg=8F03938D`).toString("base64");
+    
+        try {
+            await axios.post(jiraUrl, {
+                transition: { id: selectedStatus }
+            }, {
+                headers: {
+                    Authorization: `Basic ${auth}`,
+                    "Accept": "application/json",
+                    "Content-Type": "application/json"
+                }
+            });
+    
+            return {
+                composeExtension: {
+                    type: "message",
+                    text: `✅ Issue ${issueKey} has been updated successfully.`
+                }
+            };
+        } catch (error) {
+            console.error("Error updating issue:", error.response ? error.response.data : error.message);
+    
+            return {
+                composeExtension: {
+                    type: "message",
+                    text: `❌ Failed to update issue: ${error.message}`
+                }
+            };
+        }
+    }
+    
+    
+
 }

@@ -25,24 +25,29 @@
     "bots": [
         {
             "botId": "0bc21a2c-b9c1-4bd5-9989-0c5aaf324d64",
-            "scopes": ["team","groupChat"],
+            "scopes": ["team","groupChat","personal"],
             "supportsFiles": false,
-            "isNotificationOnly": false
+            "isNotificationOnly": false,
+            "commandLists": [
+        {
+          "scopes": ["personal", "team","groupChat"],
+          "commands": [
+            {
+              "title": "Create Issue",
+              "description": "Create a Jira issue from a message."
+            }
+          ]
+        }
+      ]
         }
     ],
+
     "composeExtensions": [
         {
             "botId": "0bc21a2c-b9c1-4bd5-9989-0c5aaf324d64",
             "canUpdateConfiguration": true,
             "commands": [
-                {
-                    "id": "customAction",
-                    "title": "Perform Custom Action",
-                    "description": "Performs a custom action on a message",
-                    "type": "action",
-                    "fetchTask": true,
-                    "context": ["message"]
-                },
+                
                 {
                     "id": "create_Issue",
                     "title": "Create Issue",
@@ -52,62 +57,25 @@
                     "context": ["message"]
                 },
                 {
-                    "id": "update_Issue",
-                    "title": "Update Issue",
-                    "description": "Update a Issue in Jira",
+                    "id": "Add_comment",
+                    "title": "add Comment",
+                    "description": "Add a comment on Issue",
                     "type": "action",
                     "fetchTask": true,
                     "context": ["message"]
                 },
                 {
-                    "id": "get_Issues",
-                    "title": "Get Issues",
-                    "description": "Get All Issues in Jira",
+                    "id": "resolve_issue",
+                    "title": "Resolve Jira Issue",
+                    "description": "Resolve an Issue",
                     "type": "action",
                     "fetchTask": true,
                     "context": ["message"]
-                },
-                
-                {
-                    "id": "searchTask",
-                    "title": "Search Task",
-                    "description": "Search for a task in Jira",
-                    "type": "query",
-                    "parameters": [
-                        {
-                            "name": "taskQuery",
-                            "title": "Enter Task ID",
-                            "description": "Search by task ID or keyword",
-                            "inputType": "text",
-                            "isRequired": true
-                        }
-                    ],
-                    "fetchTask": false
-                },
-                {
-                    "id": "Create-Issue",
-                    "title": "Create Issue",
-                    "description": "Create a new issue in Jira",
-                    "type": "action",
-                    "fetchTask": true
-                },
-                {
-                    "id": "Update-Issue",
-                    "title": "Update Issue",
-                    "description": "Update an existing Jira issue",
-                    "type": "action",
-                    "fetchTask": true
-                },
-                {
-                    "id": "Get-Issues",
-                    "title": "Get Issues",
-                    "description": "Retrieve a list of Jira issues",
-                    "type": "action",
-                    "fetchTask": true
                 }
             ]
         }
     ],
+
     "configurableTabs": [
         {
             "configurationUrl": "${{TAB_ENDPOINT}}/index.html#/dev-tab",
@@ -161,6 +129,14 @@
         "websiteUrl": "${{TAB_ENDPOINT}}/index.html#/dashboard",
         "scopes": ["personal"]
     },
+    {
+        "entityId": "All issues",
+        "name": "GetAllIssues",
+        "contentUrl": "${{TAB_ENDPOINT}}/index.html#/GetAllUser",
+        "websiteUrl": "${{TAB_ENDPOINT}}/index.html#/home",
+        "scopes": ["personal", "groupChat", "team"]
+    },
+
     {
         "entityId": "admin-config-tab",
         "name": "Admin Config",
