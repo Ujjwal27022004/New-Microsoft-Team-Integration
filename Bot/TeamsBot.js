@@ -9,7 +9,7 @@ const JIRA_BASE_URL = "https://ujjwal27022004.atlassian.net/rest/api/3";
 const JIRA_AUTH = {
     auth: {
         username: "ujjwal27022004@gmail.com",
-        password: "ATATT3xFfGF0EshpoenAFIW6-TU7QChfJ2QGYIf8CHUB6hVom3dLNWhsi4C5FBY3vtB-xYRuJ0g0HxLCsGtLblkyzCwi-MwpQVnOj3TwrmhIWvE63Up7SBrxKaSscaMgufmfFx3UY0RVCvMGl6_exPd87vlS_8QSy9Adm5MbuXelqKjYKbbmORI=4CA876BA"
+        password: "ATATT3xFfGF0Oky0-Kcs52_6ZZzlGGjPa52L7Svi7U0SKA3QaCVqeMyHfD3hQ3b-sczmxp6AxYsjMoYNQ8rlqcawzYXTPdg0hRhtim8TgUaozGHGW4Ql99ao7Dgdjgj__YKUQc_WmI7WBdZFDYJHp0BV6kWKmHn-dm-ZboJYBaFgYMQE95ukmDo=2A29ED90"
     }
 };
 
@@ -25,9 +25,25 @@ const intents = {
     "general": ["hello", "hi", "who are you"]
 };
 
+
+
+
+function stripHtml(html) {
+    return html.replace(/<[^>]*>/g, ''); // Removes all HTML tags
+}
+
 export class TeamsBot extends TeamsActivityHandler {
+
+
+    
     constructor() {
         super();
+
+
+        this.onTurn(async (context, next) => {
+            console.log("📌 Received an activity:", JSON.stringify(context.activity, null, 2));
+            await next();
+        });
 
         this.onMessage(async (context, next) => {
             // Handle form submissions
@@ -40,6 +56,7 @@ export class TeamsBot extends TeamsActivityHandler {
 
             // Handle text commands
             const userMessage = context.activity.text.toLowerCase();
+            console.log(userMessage)
             const intent = this.detectIntent(userMessage);
 
             let response;
@@ -198,25 +215,15 @@ export class TeamsBot extends TeamsActivityHandler {
     async updateAdminConfig(newConfig) {
         adminConfig = newConfig;
     }
-
-
-
-
-
-
-
-
-
-
-
-
-
+  
+  
     async handleTeamsMessagingExtensionFetchTask(context, action) {
-        const selectedMessage = action.messagePayload.body.content || ""; 
+
+        const selectedMessage =  "selected messages";
 
 
-        if (action.commandId === "Add_comment") {
-            const issueKey = selectedMessage; // Ensure issue key is passed
+        if (action.commandId === "Add_comment" || action.commandId === "Add_comment_compose") {
+            const issueKey = ""; //  Ensure issue key is passed
             return {
                 task: {
                     type: "continue",
@@ -225,6 +232,19 @@ export class TeamsBot extends TeamsActivityHandler {
                         height: 300,
                         width: 500,
                         card: CardFactory.adaptiveCard(this.getCommentCard(issueKey))
+                    }
+                }
+            };
+        }
+        else if (action.commandId === "resolve_issue" || action.commandId === "resolve_issue_compose") {
+            return {
+                task: {
+                    type: "continue",
+                    value: {
+                        title: "Resolve Jira Issue",
+                        height: 400,
+                        width: 500,
+                        card: CardFactory.adaptiveCard(this.getResolveIssueCard())
                     }
                 }
             };
@@ -247,57 +267,97 @@ export class TeamsBot extends TeamsActivityHandler {
 
         if (action.data.action === "addComment") {
             return await this.handleAddComment(context, action);
-        } else {
-
-        const { description, issueType } = action.data; 
-        try {
-            // Call the backend API with only the required fields
-            const response = await fetch("http://localhost:5000/create-jira-issue", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ description, issueType }) // Send only required fields
-            });
-
-            if (!response.ok) {
-                throw new Error(`HTTP error! Status: ${response.status}`);
+        } 
+        else  if (action.data.action === "fetchIssueStatuses") {
+            const { issueKey } = action.data;
+    
+            if (!issueKey) {
+                return {
+                    composeExtension: {
+                        type: "message",
+                        text: "⚠️ Please enter an Issue Key first."
+                    }
+                };
             }
-
-            const issueData = await response.json();
-            console.log("Received issueData from API:", issueData.issue.key); // Debugging
-
-
-            // Send a confirmation card back to Teams chat
+    
+            const statuses = await this.fetchIssueStatuses(issueKey);
+    
+            if (statuses.length === 0) {
+                return {
+                    composeExtension: {
+                        type: "message",
+                        text: "❌ Failed to fetch statuses. Check the issue key."
+                    }
+                };
+            }
+    
             return {
-                composeExtension: {
-                    type: "result",
-                    attachmentLayout: "list",
-                    attachments: [
-                        CardFactory.adaptiveCard(this.getJiraIssueCard(issueData.issue.key, issueType, description))
-                    ]
+                task: {
+                    type: "continue",
+                    value: {
+                        title: "Update Issue Status",
+                        height: 400,
+                        width: 500,
+                        card: CardFactory.adaptiveCard(this.getUpdateStatusCard(issueKey, statuses))
+                    }
                 }
             };
-        } catch (error) {
-            return {
-                composeExtension: {
-                    type: "message",
-                    text: `❌ Failed to create Jira Issue: ${error.message}`
+        } else if (action.data.action === "resolveIssue") {
+            return await this.handleResolveIssue(context, action);
+        }
+        
+        else {
+
+            const { description, issueType } = action.data;
+            try {
+                // Call the backend API with only the required fields
+                const response = await fetch("http://localhost:5000/create-jira-issue", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ description, issueType }) // Send only required fields
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! Status: ${response.status}`);
                 }
-            };
+
+                const issueData = await response.json();
+                console.log("Received issueData from API:", issueData.issue.key); // Debugging
+
+
+                // Send a confirmation card back to Teams chat
+                return {
+                    composeExtension: {
+                        type: "result",
+                        attachmentLayout: "list",
+                        attachments: [
+                            CardFactory.adaptiveCard(this.getJiraIssueCard(issueData.issue.key, issueType, description))
+                        ]
+                    }
+                };
+            } catch (error) {
+                return {
+                    composeExtension: {
+                        type: "message",
+                        text: `❌ Failed to create Jira Issue: ${error.message}`
+                    }
+                };
+            }
         }
     }
-    }
 
+
+   
+    
 
     // Adaptive Card for "Create Issue" Form
-    getCreateIssueForm(preFilledDescription="") {
+    getCreateIssueForm(preFilledDescription = "") {
         return {
             type: "AdaptiveCard",
             body: [
 
-
-               
-                
-                { type: "TextBlock", text: "Create Jira Issue", weight: "Bolder", size: "Medium",color:"Good",wrap: "true"
+                {
+                    type: "TextBlock", text: "Create Jira Issue", weight: "Bolder", size: "Medium", color: "Good", wrap: "true"
                 },
 
                 { type: "TextBlock", text: "Project", weight: "Bolder" },
@@ -330,28 +390,53 @@ export class TeamsBot extends TeamsActivityHandler {
                 {
                     type: "Input.Text",
                     id: "description",
-                    
-                    value: preFilledDescription,
-                    height:"stretch",
+
+                    value: stripHtml(preFilledDescription),
+                    height: "stretch",
                     "isMultiline": true,
 
 
-                },   
+                },
+
+                {
+                    "type": "TextBlock",
+                    "text": "Attachments",
+                    "weight": "Bolder",
+                    "spacing": "medium"
+                  },
+                  {
+                    "type": "ActionSet",
+                    "actions": [
+    
+                        {
+                            "type": "Action.Submit",
+                            "title": "Create",
+                            "style": "positive",
+                            "data": { "action": "createIssue" }
+                        },
+                      {
+                        "type": "Action.OpenUrl",
+                        "title": "📎 Upload from OneDrive",
+                        "url": "https://onedrive.live.com"
+                      }
+                    ]
+                  }
+    
             ],
-            actions: [{ type: "Action.Submit", title: "Create",style:"positive" }],
+            actions: [{ type: "Action.Submit", title: "Create", style: "positive" }],
             // actions: [{ type: "Action.Submit", title: "Create",style:"positive" }],
             version: "1.4"
-                
+
         }
     }
-    
+
 
     // Adaptive Card to Display Created Issue
     getJiraIssueCard(issueKey, title, description) {
         return {
             type: "AdaptiveCard",
             body: [
-                { type: "TextBlock", text: `✅ Jira Issue Created: ${issueKey}`, weight: "Bolder", size: "Medium" },
+                { type: "TextBlock", color: "Good", text: `✅ Jira Issue Created: ${issueKey}`, weight: "Bolder", size: "Medium" },
                 { type: "TextBlock", text: `**Title:** ${title}` },
                 { type: "TextBlock", text: `**Description:** ${description}` },
                 { type: "TextBlock", text: `[View Issue](https://ujjwal27022004.atlassian.net/browse/${issueKey})`, color: "Accent" }
@@ -388,12 +473,12 @@ export class TeamsBot extends TeamsActivityHandler {
             version: "1.4"
         };
     }
-    
+
 
 
     async handleAddComment(context, action) {
         const { issueKey, commentText } = action.data;
-    
+
         // Validate input
         if (!issueKey || !commentText) {
             return {
@@ -403,10 +488,10 @@ export class TeamsBot extends TeamsActivityHandler {
                 }
             };
         }
-    
+
         const jiraUrl = `https://ujjwal27022004.atlassian.net/rest/api/3/issue/${issueKey}/comment`;
-        const auth = Buffer.from(`ujjwal27022004@gmail.com:ATATT3xFfGF0EshpoenAFIW6-TU7QChfJ2QGYIf8CHUB6hVom3dLNWhsi4C5FBY3vtB-xYRuJ0g0HxLCsGtLblkyzCwi-MwpQVnOj3TwrmhIWvE63Up7SBrxKaSscaMgufmfFx3UY0RVCvMGl6_exPd87vlS_8QSy9Adm5MbuXelqKjYKbbmORI=4CA876BA`).toString("base64");
-    
+        const auth = Buffer.from(`ujjwal27022004@gmail.com:ATATT3xFfGF0Oky0-Kcs52_6ZZzlGGjPa52L7Svi7U0SKA3QaCVqeMyHfD3hQ3b-sczmxp6AxYsjMoYNQ8rlqcawzYXTPdg0hRhtim8TgUaozGHGW4Ql99ao7Dgdjgj__YKUQc_WmI7WBdZFDYJHp0BV6kWKmHn-dm-ZboJYBaFgYMQE95ukmDo=2A29ED90`).toString("base64");
+
         try {
             const jiraResponse = await axios.post(
                 jiraUrl,
@@ -430,9 +515,9 @@ export class TeamsBot extends TeamsActivityHandler {
                     }
                 }
             );
-    
+
             console.log("Jira API Response:", jiraResponse.data);
-    
+
             return {
                 composeExtension: {
                     type: "result",
@@ -471,10 +556,11 @@ export class TeamsBot extends TeamsActivityHandler {
                             }
                         }
                     ]
-                }}
+                }
+            }
         } catch (error) {
             console.error("Error adding comment:", error.response ? error.response.data : error.message);
-    
+
             return {
                 composeExtension: {
                     type: "message",
@@ -483,5 +569,222 @@ export class TeamsBot extends TeamsActivityHandler {
             };
         }
     }
-    
+
+
+    getResolveIssueCard() {
+        return {
+            type: "AdaptiveCard",
+            body: [
+                { type: "TextBlock", text: "Resolve Jira Issue", weight: "Bolder", size: "Medium" },
+                { type: "TextBlock", text: "Enter Issue Key:", weight: "Bolder" },
+                { type: "Input.Text", id: "issueKey", placeholder: "Enter issue key" }
+            ],
+            actions: [
+                {
+                    type: "Action.Submit",
+                    title: "Get Status",
+                    data: { action: "fetchIssueStatuses" }
+                }
+            ],
+            version: "1.4"
+        };
     }
+    
+
+    async fetchIssueStatuses(issueKey) {
+        const jiraUrl = `https://ujjwal27022004.atlassian.net/rest/api/3/issue/${issueKey}/transitions`;
+        const auth = Buffer.from(`ujjwal27022004@gmail.com:ATATT3xFfGF0Oky0-Kcs52_6ZZzlGGjPa52L7Svi7U0SKA3QaCVqeMyHfD3hQ3b-sczmxp6AxYsjMoYNQ8rlqcawzYXTPdg0hRhtim8TgUaozGHGW4Ql99ao7Dgdjgj__YKUQc_WmI7WBdZFDYJHp0BV6kWKmHn-dm-ZboJYBaFgYMQE95ukmDo=2A29ED90`).toString("base64");
+    
+        try {
+            const response = await axios.get(jiraUrl, {
+                headers: {
+                    Authorization: `Basic ${auth}`,
+                    Accept: "application/json"
+                }
+            });
+    
+            const statuses = response.data.transitions.map(transition => ({
+                title: transition.name,
+                value: transition.id
+            }));
+    
+            return statuses;
+        } catch (error) {
+            console.error("Error fetching issue statuses:", error.response ? error.response.data : error.message);
+            return [];
+        }
+    }
+
+    getUpdateStatusCard(issueKey, statuses) {
+        return {
+            type: "AdaptiveCard",
+            body: [
+                { type: "TextBlock", text: "Update Jira Issue Status", weight: "Bolder", size: "Medium" },
+                { type: "TextBlock", text: `Issue Key: ${issueKey}`, weight: "Bolder" },
+                {
+                    type: "Input.ChoiceSet",
+                    id: "selectedStatus",
+                    title: "Select New Status",
+                    choices: statuses
+                }
+            ],
+            actions: [
+                {
+                    type: "Action.Submit",
+                    title: "Update Status",
+                    data: { action: "resolveIssue", issueKey: issueKey }
+                }
+            ],
+            version: "1.4"
+        };
+    }
+
+
+    async handleResolveIssue(context, action) {
+        const { issueKey, selectedStatus } = action.data;
+    
+        if (!issueKey || !selectedStatus) {
+            return {
+                composeExtension: {
+                    type: "message",
+                    text: "⚠️ Please select a status."
+                }
+            };
+        }
+    
+        const jiraUrl = `https://ujjwal27022004.atlassian.net/rest/api/3/issue/${issueKey}/transitions`;
+        const auth = Buffer.from(`ujjwal27022004@gmail.com:ATATT3xFfGF0Oky0-Kcs52_6ZZzlGGjPa52L7Svi7U0SKA3QaCVqeMyHfD3hQ3b-sczmxp6AxYsjMoYNQ8rlqcawzYXTPdg0hRhtim8TgUaozGHGW4Ql99ao7Dgdjgj__YKUQc_WmI7WBdZFDYJHp0BV6kWKmHn-dm-ZboJYBaFgYMQE95ukmDo=2A29ED90`).toString("base64");
+    
+        try {
+            await axios.post(jiraUrl, {
+                transition: { id: selectedStatus }
+            }, {
+                headers: {
+                    Authorization: `Basic ${auth}`,
+                    "Accept": "application/json",
+                    "Content-Type": "application/json"
+                }
+            });
+    
+            return {
+                composeExtension: {
+                    type: "message",
+                    text: `✅ Issue ${issueKey} has been updated successfully.`
+                }
+            };
+        } catch (error) {
+            console.error("Error updating issue:", error.response ? error.response.data : error.message);
+    
+            return {
+                composeExtension: {
+                    type: "message",
+                    text: `❌ Failed to update issue: ${error.message}`
+                }
+            };
+        }
+    }
+
+
+    async onTeamsMessagingExtensionQuery(context, query) {
+        console.log("🔍 Received Search Query:", JSON.stringify(query, null, 2));
+    
+        try {
+            if (!query || !query.parameters || query.parameters.length === 0) {
+                return {
+                    composeExtension: {
+                        type: "message",
+                        text: "⚠️ Please enter a Jira Issue ID or keyword."
+                    }
+                };
+            }
+    
+            const issueKey = query.parameters[0].value.trim();
+            console.log("🔍 Searching for Jira Issue:", issueKey);
+    
+            if (!issueKey) {
+                return {
+                    composeExtension: {
+                        type: "message",
+                        text: "⚠️ Please enter a valid Jira Issue ID or keyword."
+                    }
+                };
+            }
+    
+            // 🔹 Call your backend API
+            const response = await axios.get(`http://localhost:5000/search-jira-issue?query=${issueKey}`);
+    
+            if (!response.data || response.data.length === 0) {
+                return {
+                    composeExtension: {
+                        type: "message",
+                        text: `❌ No issues found for: ${issueKey}`
+                    }
+                };
+            }
+    
+            console.log("✅ Found Jira Issue:", response.data);
+    
+            // 🔹 Create an Adaptive Card for the search result
+            // const attachment = CardFactory.adaptiveCard(this.getSearchJiraIssueCard(response.data));
+    
+            return {
+                composeExtension: {
+                    type: "result",
+                    attachmentLayout: "list",
+                    attachments: [attachment]
+                }
+            };
+    
+        } catch (error) {
+            console.error("❌ Error handling search query:", error);
+    
+            return {
+                composeExtension: {
+                    type: "message",
+                    text: "❌ An error occurred while processing your search."
+                }
+            };
+        }
+    }
+    
+
+    
+
+    getsearchJiraIssueCard(issue) {
+        return {
+            type: "AdaptiveCard",
+            body: [
+                { type: "TextBlock", text: `✅ Jira Issue: ${issue.key}`, weight: "Bolder", size: "Medium" },
+                { type: "TextBlock", text: `**Summary:** ${issue.fields.summary}`, wrap: true },
+                { type: "TextBlock", text: `**Status:** ${issue.fields.status.name}`, wrap: true },
+                { type: "TextBlock", text: `**Priority:** ${issue.fields.priority.name}`, wrap: true },
+                { type: "TextBlock", text: `[View in Jira](https://ujjwal27022004.atlassian.net/browse/${issue.key})`, color: "Accent" }
+            ],
+            actions: [
+                {
+                    type: "Action.OpenUrl",
+                    title: "Open in Jira",
+                    url: `https://ujjwal27022004.atlassian.net/browse/${issue.key}`
+                }
+            ],
+            version: "1.4"
+        };
+    }
+    
+    
+
+
+
+
+
+
+
+   
+
+    
+    
+
+
+    
+
+}

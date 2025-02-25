@@ -15,11 +15,13 @@ import Tab from "./Tab";
 import MessageExtension from "./sample/MessageExtension";
 import Bot from "./sample/Bot";
 import MeetingExtension from "./sample/MeetingExtension";
+import GetAllUser from "./sample/GetAllUser";
 import { TeamsFxContext } from "./Context";
 import config from "./sample/lib/config";
 import Navigation from "./sample/Navigation"; // Sidebar Navigation
 
 import * as microsoftTeams from "@microsoft/teams-js";
+import Setting from "./sample/Setting";
 
 export default function App() {
   const { loading, theme, themeString, teamsUserCredential } = useTeamsUserCredential({
@@ -59,12 +61,13 @@ export default function App() {
             <Spinner style={{ margin: 100 }} />
           ) : (
             <div className="flex h-screen">
-              <Navigation /> {/* Static Sidebar */}
-              <div className="flex-1 p-6 bg-gray-100" style={{ marginLeft: "250px" }}>
+              {/* <Navigation /> Static Sidebar */}
+              <div className="flex-1 p-6 bg-gray-100">
                 <Routes>
-                <Route path="/home" element={<Privacy />} />
-                    <Route path="/dashboard" element={<MessageExtension />} />
-                    <Route path="/settings" element={<MeetingExtension />} />
+                  <Route path="/home" element={<Privacy />} />
+                  <Route path="/dashboard" element={<MessageExtension />} />
+                  <Route path="/GetAllUser" element={<GetAllUser />} />
+                  <Route path="/settings" element={<Setting />} />
                   <Route path="/privacy" element={<Privacy />} />
                   <Route path="/termsofuse" element={<TermsOfUse />} />
                   <Route path="/tab" element={<Tab />} />

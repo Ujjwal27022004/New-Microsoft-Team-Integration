@@ -18,11 +18,20 @@ const bot = new TeamsBot();
 // Handle incoming Teams requests
 server.post('/api/messages', async (req, res) => {
     try {
+       
         await adapter.processActivity(req, res, async (context) => {
-            await bot.run(context);
+            // console.log("context is ",context)
+            try {
+                await bot.run(context);
+            } catch (botError) {
+                console.error("❌ Error inside bot.run():", botError);
+                if (!res.headersSent) {
+                    await context.sendActivity("⚠️ An error occurred while processing your request.");
+                }
+            }
         });
     } catch (error) {
-        console.error('❌ Error processing message:', error);
+        console.error('❌ Error processing message is:', error);
         res.status(500).send({ error: 'Internal Server Error' });
     }
 });

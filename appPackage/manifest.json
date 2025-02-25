@@ -47,6 +47,24 @@
             "botId": "73fb8e83-7bc3-4e93-93bf-86e94c658db7",
             "canUpdateConfiguration": true,
             "commands": [
+
+                {
+                    "id": "search_Issue",
+                    "title": "Search Issue",
+                    "description": "Search for an issue in Jira",
+                    "type": "query",
+                    "fetchTask": false,
+
+                    "context": ["message", "compose"],
+                    "parameters": [
+                        {
+                            "name": "queryText",
+                            "title": "Issue key or Keyword",
+                            "description": "Enter issue key or search term",
+                            "inputType": "text"
+                        }
+                    ]
+                },
                 
                 {
                     "id": "create_Issue",
@@ -54,7 +72,15 @@
                     "description": "Create a Issue in Jira",
                     "type": "action",
                     "fetchTask": true,
-                    "context": ["message"]
+                    "context": ["message","commandBox"]
+                },
+                {
+                    "id": "create_Issue_compose",
+                    "title": "Create Issue",
+                    "description": "Create a Issue in Jira",
+                    "type": "action",
+                    "fetchTask": true,
+                    "context": ["compose"]
                 },
                 {
                     "id": "Add_comment",
@@ -62,7 +88,31 @@
                     "description": "Add a comment on Issue",
                     "type": "action",
                     "fetchTask": true,
-                    "context": ["message"]
+                    "context": ["message","commandBox"]
+                },
+                {
+                    "id": "Add_comment_compose",
+                    "title": "add Comment",
+                    "description": "Add a comment on Issue",
+                    "type": "action",
+                    "fetchTask": true,
+                    "context": ["compose"]
+                },
+                {
+                    "id": "resolve_issue",
+                    "title": "Resolve Jira Issue",
+                    "description": "Resolve an Issue",
+                    "type": "action",
+                    "fetchTask": true,
+                    "context": ["message","commandBox"]
+                },
+                {
+                    "id": "resolve_issue_compose",
+                    "title": "Resolve Jira Issue",
+                    "description": "Resolve an Issue",
+                    "type": "action",
+                    "fetchTask": true,
+                    "context": ["compose"]
                 }
             ]
         }
@@ -106,10 +156,18 @@
     },
 
     "staticTabs": [
+
     {
         "entityId": "home",
         "name": "Home",
         "contentUrl": "${{TAB_ENDPOINT}}/index.html#/home",
+        "websiteUrl": "${{TAB_ENDPOINT}}/index.html#/home",
+        "scopes": ["personal", "groupChat", "team"]
+    },
+    {
+        "entityId": "All issues",
+        "name": "GetAllIssues",
+        "contentUrl": "${{TAB_ENDPOINT}}/index.html#/GetAllUser",
         "websiteUrl": "${{TAB_ENDPOINT}}/index.html#/home",
         "scopes": ["personal", "groupChat", "team"]
     },
